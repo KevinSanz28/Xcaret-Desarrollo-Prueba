@@ -1,0 +1,67 @@
+public class DatosConsumidos {
+    
+    public static HttpResponse getDatos(){
+        Http http = new Http();
+        HttpRequest request = new HttpRequest();
+        request.setEndpoint('https://www.reddit.com/r/subreddit/new.json?sort=new');
+        request.setMethod('GET');
+        HttpResponse response = http.send(request);
+        
+        System.debug('Tamaño de EstatusCode: ');
+        System.debug(response.getStatusCode());
+        
+        if(response.getStatusCode() == 200){
+            Map<String, Object> results = (Map<String, Object>) JSON.deserializeUntyped(response.getBody());
+            System.debug('Resultado: ');
+            System.debug(results);
+            
+            Map<String,Object> data = (Map<String,Object>)results.get('data');
+            List<Object> datachildren = (List<Object>) data.get('children');
+            
+            List<reddit_items__c> redditItems = new List<reddit_items__c>();
+            System.debug('Lista RedditItem: ');
+            System.debug(redditItems);
+            
+            for(Object children: datachildren ){
+                Map<String,Object> listfieldchildren = (Map<String,Object>) children;
+                Map<String,Object> datachildrent = (Map<String,Object>) listfieldchildren.get('data');
+                reddit_items__c redditItem = new reddit_items__c();
+                
+                String name = (String)datachildrent.get('name');
+                String title = (String)datachildrent.get('title');
+                String author_fullname = (String)datachildrent.get('author_fullname');
+                String thumbnail = (String)datachildrent.get('thumbnail');
+                String selftext = (String)datachildrent.get('selftext');
+                
+                redditItem.Name = name;
+                redditItem.title__c = title;
+                redditItem.nameauthor__c = author_fullname;
+                redditItem.thumbnail__c = thumbnail;
+                redditItem.selftext__c = selftext;
+                
+                System.debug('Name: ' + name);
+                System.debug('title: ' + title);
+                System.debug('nameauthor: '+ author_fullname );
+                System.debug('thumbnail: ' + thumbnail);
+                System.debug('selftext: ' + selftext);
+                
+                redditItems.add(redditItem);
+            }
+            database.insert(redditItems);
+            
+        }
+        
+        return response;
+    }
+    
+    @AuraEnabled
+    public static List<reddit_items__c> ListDatos(){
+        List<reddit_items__c> redditList = [SELECT Name, title__c, nameauthor__c, thumbnail__c, selftext__c FROM reddit_items__c ];
+        System.debug('Lista Reddit: ' + redditList);
+        
+        return redditList;
+        
+    }    
+    
+    
+}
